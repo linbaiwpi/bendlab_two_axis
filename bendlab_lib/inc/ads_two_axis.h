@@ -63,7 +63,7 @@ typedef struct {
  * @param	run	true if activating ADS, false is putting in suspend mode
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_run(bool run);
+int ads_two_axis_run(ads_t *ads, bool run);
 
 /**
  * @brief Sets the sample rate of the ADS in free run mode
@@ -71,7 +71,7 @@ int ads_two_axis_run(bool run);
  * @param	sps ADS_SPS_T sample rate
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_set_sample_rate(ADS_SPS_T sps);
+int ads_two_axis_set_sample_rate(ads_t *ads, ADS_SPS_T sps);
 
 /**
  * @brief Enables the ADS data ready interrupt line
@@ -79,7 +79,7 @@ int ads_two_axis_set_sample_rate(ADS_SPS_T sps);
  * @param	run	true if activating ADS, false is putting in suspend mode
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_enable_interrupt(bool enable);
+int ads_two_axis_enable_interrupt(ads_t *ads, bool enable);
 
 /**
  * @brief Updates the I2C address of the selected ADS. The default address
@@ -90,7 +90,7 @@ int ads_two_axis_enable_interrupt(bool enable);
  * @param	address	new address of the ADS
  * @return	ADS_OK if successful ADS_ERR_IO or ADS_ERR_BAD_PARAM if failed
  */
-int ads_two_axis_update_device_address(uint8_t device, uint8_t address);
+int ads_two_axis_update_device_address(ads_t *ads, uint8_t device, uint8_t address);
 
 /**
  * @brief Initializes the hardware abstraction layer and sample rate of the ADS
@@ -116,7 +116,7 @@ int ads_two_axis_init(ads_init_t *ads_init, ads_t *ads);
  *ADS_CALIBRATE_FLAT, and ADS_CALIBRATE_PERP
  * @return	ADS_OK if successful ADS_ERR_IO or ADS_BAD_PARAM if failed
  */
-int ads_two_axis_calibrate(ADS_CALIBRATION_STEP_T ads_calibration_step,
+int ads_two_axis_calibrate(ads_t *ads, ADS_CALIBRATION_STEP_T ads_calibration_step,
                            uint8_t degrees);
 
 /**
@@ -129,7 +129,7 @@ int ads_two_axis_calibrate(ADS_CALIBRATION_STEP_T ads_calibration_step,
  * @param	axes_enabled	bit mask of which axes to enable
  * @return	ADS_OK if successful ADS_ERR_IO or ADS_BAD_PARAM if failed
  */
-int ads_two_axis_enable_axis(uint8_t axes_enable);
+int ads_two_axis_enable_axis(ads_t *ads, uint8_t axes_enable);
 
 /**
  * @brief Shutdown ADS. Requires reset to wake up from Shutdown. ~50nA in
@@ -137,14 +137,14 @@ int ads_two_axis_enable_axis(uint8_t axes_enable);
  *
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_shutdown(void);
+int ads_two_axis_shutdown(ads_t *ads);
 
 /**
  * @brief Wakes up ADS from shutdown. Delay is necessary for ADS to reinitialize
  *
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_wake(void);
+int ads_two_axis_wake(ads_t *ads);
 
 /**
  * @brief Checks that the device id is ADS_TWO_AXIS. ADS should not be in free
@@ -152,7 +152,7 @@ int ads_two_axis_wake(void);
  *
  * @return	ADS_OK if dev_id is ADS_TWO_AXIS, ADS_ERR_DEV_ID if not
  */
-int ads_get_dev_id(void);
+int ads_get_dev_id(ads_t *ads);
 
 /**
  * @brief Returns the device type in ads_dev_type. ADS should not be in free run

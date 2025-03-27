@@ -34,17 +34,17 @@ static inline int ads_two_axis_dfu_get_ack(void);
  * @param ads_get_fw_ver	Get fw version command
  * @return	TRUE if update needed. FALSE if no updated needed
  */
-bool ads_two_axis_dfu_check(uint8_t ads_get_fw_ver) {
+bool ads_two_axis_dfu_check(ads_t *ads, uint8_t ads_get_fw_ver) {
   uint8_t buffer[] = {ADS_GET_FW_VER, 0, 0};
   uint16_t fw_ver;
 
-  ads_hal_pin_int_enable(false);
+  ads_hal_pin_int_enable(ads, false);
 
-  ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
   ads_hal_delay(2);
-  ads_hal_read_buffer(buffer, ADS_TRANSFER_SIZE);
+  ads_hal_read_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 
-  ads_hal_pin_int_enable(true);
+  ads_hal_pin_int_enable(ads, true);
 
   if (buffer[0] == ADS_FW_VER) {
     fw_ver = ads_uint16_decode(&buffer[1]);
@@ -68,12 +68,12 @@ bool ads_two_axis_dfu_check(uint8_t ads_get_fw_ver) {
  *
  * @return	ADS_OK if successful ADS_ERR_TIMEOUT if failed
  */
-static inline int ads_two_axis_dfu_get_ack(void) {
+static inline int ads_two_axis_dfu_get_ack(ads_t *ads) {
   uint8_t timeout = 250;
   uint8_t ack = 0;
 
   do {
-    ads_hal_read_buffer(&ack, 1);
+    ads_hal_read_buffer(ads, &ack, 1);
   } while (--timeout && ack != 's');
 
   if (timeout)
@@ -87,13 +87,13 @@ static inline int ads_two_axis_dfu_get_ack(void) {
  *
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_dfu_reset(void) {
+int ads_two_axis_dfu_reset(ads_t *ads) {
   uint8_t packet[ADS_TRANSFER_SIZE];
 
   packet[0] = ADS_DFU;
   packet[1] = packet[2] = 0;
 
-  return ads_hal_write_buffer(packet, ADS_TRANSFER_SIZE);
+  return ads_hal_write_buffer(ads, packet, ADS_TRANSFER_SIZE);
 }
 
 /**
@@ -101,7 +101,7 @@ int ads_two_axis_dfu_reset(void) {
  *
  * @return	ADS_OK if successful ADS_ERR_TIMEOUT if failed
  */
-int ads_two_axis_dfu_update(void) {
+int ads_two_axis_dfu_update(ads_t *ads) {
   const uint8_t *fw = NULL;
   uint32_t len = 0;
 
@@ -127,10 +127,10 @@ int ads_two_axis_dfu_update(void) {
   uint8_t packet[page_size];
 
   // Store a local copy of the current i2c address
-  uint8_t address = ads_hal_get_address();
+  uint8_t address = ads_hal_get_address(ads);
 
   // Set the i2c address to the booloader address
-  ads_hal_set_address(ADS_BOOTLOADER_ADDRESS);
+  ads_hal_set_address(ads, ADS_BOOTLOADER_ADDRESS);
 
   // Transmit the length of the new firmware to the bootloader
   packet[0] = (uint8_t)(len & 0xff);
@@ -138,12 +138,12 @@ int ads_two_axis_dfu_update(void) {
   packet[2] = (uint8_t)((len >> 16) & 0xff);
   packet[3] = (uint8_t)((len >> 24) & 0xff);
 
-  ads_hal_write_buffer(packet, 4);
+  ads_hal_write_buffer(ads, packet, 4);
 
   // Get acknowledgement of the fw length
   if (ads_two_axis_dfu_get_ack() != ADS_OK) {
     // restore i2c address
-    ads_hal_set_address(address);
+    ads_hal_set_address(ads, address);
     return ADS_ERR_TIMEOUT;
   }
 
@@ -156,14 +156,14 @@ int ads_two_axis_dfu_update(void) {
     memcpy(packet, &fw[i * page_size], page_size);
 
     // Send the page
-    ads_hal_write_buffer(packet, page_size / 2);
+    ads_hal_write_buffer(ads, packet, page_size / 2);
 
-    ads_hal_write_buffer(&packet[page_size / 2], page_size / 2);
+    ads_hal_write_buffer(ads, &packet[page_size / 2], page_size / 2);
 
     // Get acknowledgement of the recieved page
     if (ads_two_axis_dfu_get_ack() != ADS_OK) {
       // restore i2c address
-      ads_hal_set_address(address);
+      ads_hal_set_address(ads, address);
       return ADS_ERR_TIMEOUT;
     }
   }
@@ -172,19 +172,19 @@ int ads_two_axis_dfu_update(void) {
   memcpy(packet, &fw[nb_blocks * block_len], rem_data);
 
   if (rem_data > page_size / 2) {
-    ads_hal_write_buffer(packet, page_size / 2);
-    ads_hal_write_buffer(&packet[page_size / 2], rem_data - page_size / 2);
+    ads_hal_write_buffer(ads, packet, page_size / 2);
+    ads_hal_write_buffer(ads, &packet[page_size / 2], rem_data - page_size / 2);
   } else
-    ads_hal_write_buffer(packet, rem_data);
+    ads_hal_write_buffer(ads, packet, rem_data);
 
   if (ads_two_axis_dfu_get_ack() != ADS_OK) {
     // restore i2c address
-    ads_hal_set_address(address);
+    ads_hal_set_address(ads, address);
     return ADS_ERR_TIMEOUT;
   }
 
   // restore i2c address
-  ads_hal_set_address(address);
+  ads_hal_set_address(ads, address);
 
   return ADS_OK;
 }

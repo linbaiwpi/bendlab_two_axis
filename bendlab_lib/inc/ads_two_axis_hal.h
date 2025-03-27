@@ -93,12 +93,12 @@ int ads_hal_update_device_addr(uint8_t device, uint8_t address);
  *				Used by device firmware update (dfu)
  * @return	uint8_t _address
  */
-uint8_t ads_hal_get_address(void);
+uint8_t ads_hal_get_address(ads_t *ads);
 
 /**
  * @brief Sets the current i2c address that the hal layer is addressing.
  *				Used by device firmware update (dfu)
  */
-void ads_hal_set_address(uint8_t address);
+void ads_hal_set_address(ads_t *ads, uint8_t address);
 
 #endif /* ADS_TWO_AXIS_HAL_ */

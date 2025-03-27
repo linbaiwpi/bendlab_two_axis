@@ -40,13 +40,13 @@ void ads_two_axis_parse_read_buffer(uint8_t *buffer) {
  * @param	run	true if activating ADS, false is putting in suspend mode
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_run(bool run) {
+int ads_two_axis_run(ads_t *ads, bool run) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
   buffer[0] = ADS_RUN;
   buffer[1] = run;
 
-  return ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  return ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 }
 
 /**
@@ -55,13 +55,13 @@ int ads_two_axis_run(bool run) {
  * @param	sps ADS_SPS_T sample rate
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_set_sample_rate(ADS_SPS_T sps) {
+int ads_two_axis_set_sample_rate(ads_t *ads, ADS_SPS_T sps) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
   buffer[0] = ADS_SPS;
   ads_uint16_encode(sps, &buffer[1]);
 
-  return ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  return ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 }
 
 /**
@@ -70,13 +70,13 @@ int ads_two_axis_set_sample_rate(ADS_SPS_T sps) {
  * @param	run	true if activating ADS, false is putting in suspend mode
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_enable_interrupt(bool enable) {
+int ads_two_axis_enable_interrupt(ads_t *ads, bool enable) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
   buffer[0] = ADS_INTERRUPT_ENABLE;
   buffer[1] = enable;
 
-  return ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  return ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 }
 
 /**
@@ -88,16 +88,16 @@ int ads_two_axis_enable_interrupt(bool enable) {
  * @param	address	new address of the ADS
  * @return	ADS_OK if successful ADS_ERR_IO or ADS_ERR_BAD_PARAM if failed
  */
-int ads_two_axis_update_device_address(uint8_t device, uint8_t address) {
+int ads_two_axis_update_device_address(ads_t *ads, uint8_t device, uint8_t address) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
   buffer[0] = ADS_SET_ADDRESS;
   buffer[1] = address;
 
-  if (ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE) != ADS_OK)
+  if (ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE) != ADS_OK)
     return ADS_ERR_IO;
 
-  ads_hal_set_address(address);
+  ads_hal_set_address(ads, address);
 
   return ADS_OK;
 }
@@ -114,7 +114,7 @@ int ads_two_axis_init(ads_init_t *ads_init, ads_t *ads) {
   // Check that the device id matched ADS_TWO_AXIS
   // Check that the device type is a one axis
   ADS_DEV_TYPE_T ads_dev_type;
-  if (ads_get_dev_type(&ads_dev_type) != ADS_OK)
+  if (ads_get_dev_type(ads, &ads_dev_type) != ADS_OK)
     return ADS_ERR_DEV_ID;
 
   switch (ads_dev_type) {
@@ -127,7 +127,7 @@ int ads_two_axis_init(ads_init_t *ads_init, ads_t *ads) {
 
   ads_hal_delay(2);
 
-  if (ads_two_axis_set_sample_rate(ads_init->sps))
+  if (ads_two_axis_set_sample_rate(ads, ads_init->sps))
     return ADS_ERR;
 
   ads_hal_delay(2);
@@ -151,7 +151,7 @@ int ads_two_axis_init(ads_init_t *ads_init, ads_t *ads) {
  *				ADS_CALIBRATE_FLAT, and ADS_CALIBRATE_PERP
  * @return	ADS_OK if successful ADS_ERR_IO or ADS_BAD_PARAM if failed
  */
-int ads_two_axis_calibrate(ADS_CALIBRATION_STEP_T ads_calibration_step,
+int ads_two_axis_calibrate(ads_t *ads, ADS_CALIBRATION_STEP_T ads_calibration_step,
                            uint8_t degrees) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
@@ -159,7 +159,7 @@ int ads_two_axis_calibrate(ADS_CALIBRATION_STEP_T ads_calibration_step,
   buffer[1] = ads_calibration_step;
   buffer[2] = degrees;
 
-  return ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  return ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 }
 
 /**
@@ -172,7 +172,7 @@ int ads_two_axis_calibrate(ADS_CALIBRATION_STEP_T ads_calibration_step,
  * @param	axes_enabled	bit mask of which axes to enable
  * @return	ADS_OK if successful ADS_ERR_IO or ADS_BAD_PARAM if failed
  */
-int ads_two_axis_enable_axis(uint8_t axes_enable) {
+int ads_two_axis_enable_axis(ads_t *ads, uint8_t axes_enable) {
   if (!(axes_enable & (ADS_AXIS_0_EN | ADS_AXIS_1_EN)))
     return ADS_ERR_BAD_PARAM;
 
@@ -181,7 +181,7 @@ int ads_two_axis_enable_axis(uint8_t axes_enable) {
   buffer[0] = ADS_AXES_ENALBED;
   buffer[1] = axes_enable;
 
-  return ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  return ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 }
 
 /**
@@ -190,12 +190,12 @@ int ads_two_axis_enable_axis(uint8_t axes_enable) {
  *
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_shutdown(void) {
+int ads_two_axis_shutdown(ads_t *ads) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
   buffer[0] = ADS_SHUTDOWN;
 
-  return ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  return ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 }
 
 /**
@@ -203,9 +203,9 @@ int ads_two_axis_shutdown(void) {
  *
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_two_axis_wake(void) {
+int ads_two_axis_wake(ads_t *ads) {
   // Reset ADS to wake from shutdown
-  ads_hal_reset();
+  ads_hal_reset(ads);
 
   // Allow time for ADS to reinitialize
   ads_hal_delay(100);
@@ -219,10 +219,10 @@ int ads_two_axis_wake(void) {
  *
  * @return	ADS_OK if dev_id is ADS_TWO_AXIS, ADS_ERR_DEV_ID if not
  */
-int ads_get_dev_id(void) {
+int ads_get_dev_id(ads_t *ads) {
   ADS_DEV_TYPE_T device_type;
 
-  if (ads_get_dev_type(&device_type) == ADS_OK) {
+  if (ads_get_dev_type(ads, &device_type) == ADS_OK) {
     switch (device_type) {
     case ADS_DEV_TWO_AXIS_V1:
     case ADS_DEV_TWO_AXIS_V2:

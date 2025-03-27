@@ -343,8 +343,8 @@ int ads_hal_update_device_addr(uint8_t device, uint8_t address) {
  *              Used by device firmware update (dfu)
  * @return  uint8_t _address
  */
-uint8_t ads_hal_get_address(XIic *InstancePtr) {
-  return XIic_GetAddress(InstancePtr, XII_ADDR_TO_RESPOND_TYPE);
+uint8_t ads_hal_get_address(ads_t *ads) {
+  return XIic_GetAddress(ads->i2c_ctrl_ptr, XII_ADDR_TO_RESPOND_TYPE);
 
   /* commented since this won't be used on FPGA
   return _address;
@@ -355,8 +355,8 @@ uint8_t ads_hal_get_address(XIic *InstancePtr) {
  * @brief Sets the i2c address that the hal layer is addressing *
  *              Used by device firmware update (dfu)
  */
-void ads_hal_set_address(XIic *InstancePtr, uint8_t address) {
-  int Status = XIic_SetAddress(InstancePtr, XII_ADDR_TO_SEND_TYPE, address);
+void ads_hal_set_address(ads_t *ads, uint8_t address) {
+  int Status = XIic_SetAddress(ads->i2c_ctrl_ptr, XII_ADDR_TO_SEND_TYPE, address);
   if (Status != XST_SUCCESS)
     xil_printf("[ERROR] XIic_SetAddress failed!\r\n");
   /* commented since this won't be used on FPGA

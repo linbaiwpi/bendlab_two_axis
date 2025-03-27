@@ -56,8 +56,6 @@ void ads_data_callback(float *sample) {
 }
 
 int main() {
-  // Serial.begin(115200);
-
   delay(2000);
 
   // Serial.println("Initializing Two Axis sensor");
@@ -95,27 +93,18 @@ int main() {
 
   delay(100);
 
-  /*
+
       // Start reading data!
-      ads_two_axis_run(true);
+      ads_two_axis_run(&bl_r0, true);
 
       while (1) {
           if(newData)
           {
               newData = false;
-
-              // Serial.print(ang[0]);
-              // Serial.print(",");
-              // Serial.println(ang[1]);
               xil_printf("%d, %d\n\r");
           }
-
-          if(Serial.available())
-          {
-              parse_serial_port();
-          }
       }
-  */
+
 }
 
 void signal_filter(float *sample) {
