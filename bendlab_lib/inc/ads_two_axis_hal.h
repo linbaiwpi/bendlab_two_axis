@@ -14,8 +14,22 @@
 #define ADS_TWO_AXIS_HAL_
 
 #include "ads_two_axis_err.h"
-#include "ads_two_axis.h"
 #include <stdint.h>
+
+#include "xgpio.h"
+#include "xiic.h"
+#include "xintc.h"
+
+typedef struct {
+  // user added
+  XIic *i2c_ctrl_ptr;   // pointer of i2c controller on microblaze
+  uint8_t i2c_addr;     // i2c device address
+  XIntc *intr_ctrl_ptr; // pointer of axi interrupt controller
+  uint8_t intr_vec_id;  // interrupt vector ID
+  XGpio *reset_pins;      // pointer of gpio to connect all reset
+  uint8_t reset_id;  // reset pin index of current
+  bool intr_enabled; // indicate interrupt mode is enabled or not
+} ads_t;
 
 #define ADS_TRANSFER_SIZE (5)
 

@@ -108,8 +108,8 @@ int ads_two_axis_update_device_address(uint8_t device, uint8_t address) {
  * @param	ads_init_t	initialization structure of the ADS
  * @return	ADS_OK if successful ADS_ERR if failed
  */
-int ads_two_axis_init(ads_t *ads_init) {
-  ads_hal_init(ads_init);
+int ads_two_axis_init(ads_init_t *ads_init, ads_t *ads) {
+  ads_hal_init(ads);
 
   // Check that the device id matched ADS_TWO_AXIS
   // Check that the device type is a one axis
@@ -240,19 +240,19 @@ int ads_get_dev_id(void) {
  * @param device_type  recipient of the device type
  * @return	ADS_OK if dev_id is one of ADS_DEV_TYPE_T, ADS_ERR_DEV_ID if not
  */
-int ads_get_dev_type(ADS_DEV_TYPE_T *ads_dev_type) {
+int ads_get_dev_type(ads_t *ads, ADS_DEV_TYPE_T *ads_dev_type) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
   buffer[0] = ADS_GET_DEV_ID;
 
   // Disable interrupt to prevent callback from reading out device id
-  ads_hal_pin_int_enable(false);
+  ads_hal_pin_int_enable(ads, false);
 
-  ads_hal_write_buffer(buffer, ADS_TRANSFER_SIZE);
+  ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
   ads_hal_delay(2);
-  ads_hal_read_buffer(buffer, ADS_TRANSFER_SIZE);
+  ads_hal_read_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 
-  ads_hal_pin_int_enable(true);
+  ads_hal_pin_int_enable(ads, true);
 
   if (buffer[0] == ADS_DEV_ID) {
     switch (buffer[1]) {

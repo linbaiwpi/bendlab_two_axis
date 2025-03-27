@@ -64,11 +64,12 @@ int main() {
   xil_printf("Initializing Two Axis sensor\n\r");
 
   ads_t bl_r0;
+  ads_init_t bl_r0_init;
 
-  bl_r0.sps = ADS_100_HZ;
-  bl_r0.ads_sample_callback = &ads_data_callback;
-  bl_r0.reset_pin = ADS_RESET_PIN; // Pin connected to ADS reset line
-  bl_r0.datardy_pin =
+  bl_r0_init.sps = ADS_100_HZ;
+  bl_r0_init.ads_sample_callback = &ads_data_callback;
+  bl_r0_init.reset_pin = ADS_RESET_PIN; // Pin connected to ADS reset line
+  bl_r0_init.datardy_pin =
       ADS_INTERRUPT_PIN; // Pin connected to ADS data ready interrupt
   // user defined
   bl_r0.i2c_ctrl_ptr = &iic_bl_r0;
@@ -80,7 +81,7 @@ int main() {
   bl_r0.intr_enabled = false;
 
   // Initialize ADS hardware abstraction layer, and set the sample rate
-  int ret_val = ads_two_axis_init(&bl_r0);
+  int ret_val = ads_two_axis_init(&bl_r0_init, &bl_r0);
 
   if (ret_val == ADS_OK) {
     // Serial.println("Two Axis ADS initialization succeeded");

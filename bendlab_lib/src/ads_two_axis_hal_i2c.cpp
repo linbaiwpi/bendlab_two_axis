@@ -53,12 +53,15 @@ static void ads_hal_i2c_init(XIic *InstancePtr, u32 IicBaseAddr);
  * @param len           Length of buffer.
  * @return  ADS_OK if successful ADS_ERR_IO if failed
  */
+ // TODO
+ /*
 void ads_hal_interrupt(XIic *InstancePtr, u32 I2cAddr) {
   if (ads_hal_read_buffer(InstancePtr, I2cAddr, read_buffer,
                           ADS_TRANSFER_SIZE) == ADS_OK) {
     ads_read_callback(read_buffer);
   }
 }
+*/
 
 static void ads_hal_pin_int_init(ads_t *ads_init) {
   // TODO

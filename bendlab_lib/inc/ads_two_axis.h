@@ -13,7 +13,7 @@
 #ifndef ADS_TWO_AXIS_H_
 #define ADS_TWO_AXIS_H_
 
-#include "ads_two_axis_dfu.h"
+// #include "ads_two_axis_dfu.h"
 #include "ads_two_axis_err.h"
 #include "ads_two_axis_hal.h"
 #include "ads_two_axis_util.h"
@@ -56,20 +56,6 @@ typedef struct {
   uint32_t datardy_pin;
 } ads_init_t;
 
-typedef struct {
-  ADS_SPS_T sps;
-  ads_callback ads_sample_callback;
-  uint32_t reset_pin;
-  uint32_t datardy_pin;
-  // user added
-  XIic *i2c_ctrl_ptr;   // pointer of i2c controller on microblaze
-  uint8_t i2c_addr;     // i2c device address
-  XIntc *intr_ctrl_ptr; // pointer of axi interrupt controller
-  uint8_t intr_vec_id;  // interrupt vector ID
-  XGpio *reset_pins;      // pointer of gpio to connect all reset
-  uint8_t reset_id;  // reset pin index of current
-  bool intr_enabled; // indicate interrupt mode is enabled or not
-} ads_t;
 
 /**
  * @brief Places ADS in free run or sleep mode
@@ -112,7 +98,7 @@ int ads_two_axis_update_device_address(uint8_t device, uint8_t address);
  * @param	ads_init_t	initialization structure of the ADS
  * @return	ADS_OK if successful ADS_ERR if failed
  */
-int ads_two_axis_init(ads_t *ads_init);
+int ads_two_axis_init(ads_init_t *ads_init, ads_t *ads);
 
 /**
  * @brief Calibrates two axis ADS. ADS_CALIBRATE_FIRST must be at 0 degrees on
@@ -175,6 +161,6 @@ int ads_get_dev_id(void);
  * @param ads_dev_type  recipient of the device type
  * @return	ADS_OK if dev_id is one of ADS_DEV_TYPE_T, ADS_ERR_DEV_ID if not
  */
-int ads_get_dev_type(ADS_DEV_TYPE_T *ads_dev_type);
+int ads_get_dev_type(ads_t *ads, ADS_DEV_TYPE_T *ads_dev_type);
 
 #endif /* ADS_TWO_AXIS_H_ */
