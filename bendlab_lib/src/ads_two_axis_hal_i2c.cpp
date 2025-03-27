@@ -14,6 +14,8 @@
 #include "i2c_axi.h"
 #include "sleep.h"
 #include "xiic.h"
+#include "xil_printf.h"
+#include <cstdint>
 
 /* Hardware Specific Includes */
 // #include "Arduino.h"
@@ -42,8 +44,8 @@ static uint8_t ads_addrs[ADS_COUNT] = {
 /*                        HAL Stub Functions                            */
 /************************************************************************/
 static inline void ads_hal_gpio_pin_write(uint8_t pin, uint8_t val);
-static void ads_hal_pin_int_init(ads_t *ads_init);
-static void ads_hal_i2c_init(XIic *InstancePtr, u32 IicBaseAddr);
+static void ads_hal_pin_int_init(ads_t *ads);
+static void ads_hal_i2c_init(ads_t *ads);
 
 /**
  * @brief ADS data ready interrupt. Reads out packet from ADS and fires callback
@@ -53,23 +55,26 @@ static void ads_hal_i2c_init(XIic *InstancePtr, u32 IicBaseAddr);
  * @param len           Length of buffer.
  * @return  ADS_OK if successful ADS_ERR_IO if failed
  */
- // TODO
- /*
-void ads_hal_interrupt(XIic *InstancePtr, u32 I2cAddr) {
-  if (ads_hal_read_buffer(InstancePtr, I2cAddr, read_buffer,
-                          ADS_TRANSFER_SIZE) == ADS_OK) {
-    ads_read_callback(read_buffer);
-  }
+void ads_hal_interrupt(void *isr) {
+  isr_t *isr_ = (isr_t *)isr;
+  // if (ads_hal_read_buffer(isr_->InstancePtr, isr_->I2cAddr, read_buffer,
+  // ADS_TRANSFER_SIZE) == ADS_OK) {
+  int recv_num = I2C_Read_axi(isr_->InstancePtr->BaseAddress, isr_->I2cAddr, -1,
+                              ADS_TRANSFER_SIZE, read_buffer);
+  if (recv_num == ADS_TRANSFER_SIZE)
+    xil_printf("read OK");
+  else
+    xil_printf("read ERROR");
+  // ads_read_callback(read_buffer);
 }
-*/
 
-static void ads_hal_pin_int_init(ads_t *ads_init) {
+static void ads_hal_pin_int_init(ads_t *ads) {
   // TODO
   /*
 pinMode(ADS_INTERRUPT_PIN, INPUT_PULLUP);
 ads_hal_pin_int_enable(true);
 */
-ads_hal_pin_int_enable(ads_init, true);
+  ads_hal_pin_int_enable(ads, true);
 }
 
 static inline void ads_hal_gpio_pin_write(uint8_t pin, uint8_t val) {
@@ -89,16 +94,16 @@ void ads_hal_delay(uint16_t delay_ms) {
 
 void delay(uint16_t delay_ms) { ads_hal_delay(delay_ms); }
 
-void ads_hal_pin_int_enable(ads_t *ads_init, bool enable) {
+void ads_hal_pin_int_enable(ads_t *ads, bool enable) {
   _ads_int_enabled = enable;
 
   if (enable) {
     // attachInterrupt(digitalPinToInterrupt(ADS_INTERRUPT_PIN),
     // ads_hal_interrupt, FALLING);
-    XIntc_Disable(ads_init->intr_ctrl_ptr, ads_init->intr_vec_id);
+    XIntc_Disable(ads->intr_ctrl_ptr, ads->intr_vec_id);
   } else {
     // detachInterrupt(digitalPinToInterrupt(ADS_INTERRUPT_PIN));
-    XIntc_Enable(ads_init->intr_ctrl_ptr, ads_init->intr_vec_id);
+    XIntc_Enable(ads->intr_ctrl_ptr, ads->intr_vec_id);
   }
 }
 
@@ -106,16 +111,17 @@ void ads_hal_pin_int_enable(ads_t *ads_init, bool enable) {
  * @brief Configure I2C bus, 7 bit address, 400kHz frequency enable clock
  * stretching if available.
  */
-void ads_hal_i2c_init(XIic *InstancePtr, u32 IicBaseAddr) {
+void ads_hal_i2c_init(ads_t *ads) {
   int Status;
   XIic_Config *ConfigPtr;
 
-  ConfigPtr = XIic_LookupConfig(IicBaseAddr);
+  ConfigPtr = XIic_LookupConfig(ads->i2c_ctrl_ptr->BaseAddress);
   if (ConfigPtr == NULL) {
     xil_printf("[ERROR] XIic_LookupConfig Failed!\r\n");
   }
 
-  Status = XIic_CfgInitialize(InstancePtr, ConfigPtr, ConfigPtr->BaseAddress);
+  Status =
+      XIic_CfgInitialize(ads->i2c_ctrl_ptr, ConfigPtr, ConfigPtr->BaseAddress);
   if (Status != XST_SUCCESS) {
     xil_printf("[ERROR] XIic_CfgInitialize Failed!\r\n");
   }
@@ -127,6 +133,48 @@ void ads_hal_i2c_init(XIic *InstancePtr, u32 IicBaseAddr) {
   */
 }
 
+void ads_hal_gpio_init(XGpio *ads_gpio, UINTPTR baseAddr, bool is_output) {
+  int Status;
+  XGpio_Config *ConfigPtr;
+  //初始化LED
+  ConfigPtr = XGpio_LookupConfig(baseAddr);
+  if (ConfigPtr == NULL) {
+    xil_printf("[ERROR] XGpio_LookupConfig Failed!\r\n");
+  }
+
+  Status = XGpio_CfgInitialize(ads_gpio, ConfigPtr, ConfigPtr->BaseAddress);
+  if (Status != XST_SUCCESS) {
+    xil_printf("[ERROR] XIic_CfgInitialize Failed!\r\n");
+  }
+  //为指定的GPIO信道设置所有独立信号的输出方向
+  if (is_output)
+    XGpio_SetDataDirection(ads_gpio, 1, 0);
+  else
+    XGpio_SetDataDirection(ads_gpio, 1, 1);
+}
+
+void ads_hal_intc_init(XIntc *ads_intc, UINTPTR baseAddr, const ads_t *ads,
+                       const int8_t ads_size) {
+  //中断控制器初始化
+  XIntc_Initialize(ads_intc, baseAddr);
+  for (int i = 0; i < ads_size; ++i) {
+    isr_t isr_ = {ads[i].i2c_ctrl_ptr, ads[i].i2c_addr};
+    //关联中断源和中断处理函数
+    XIntc_Connect(ads_intc, ads[i].intr_vec_id,
+                  (XInterruptHandler)ads_hal_interrupt, (void *)&isr_);
+    //使能中断控制器
+    XIntc_Enable(ads_intc, ads[i].intr_vec_id);
+  }
+  //开启中断控制器
+  XIntc_Start(ads_intc, XIN_REAL_MODE);
+  //设置并打开中断异常处理
+  Xil_ExceptionInit();
+  Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT,
+                               (Xil_ExceptionHandler)XIntc_InterruptHandler,
+                               ads_intc);
+  Xil_ExceptionEnable();
+}
+
 /**
  * @brief Write buffer of data to the Angular Displacement Sensor
  *
@@ -134,20 +182,20 @@ void ads_hal_i2c_init(XIic *InstancePtr, u32 IicBaseAddr) {
  * @param len           Length of buffer.
  * @return  ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_write_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len) {
+int ads_hal_write_buffer(ads_t *ads, uint8_t *buffer, uint8_t len) {
   // Disable the interrupt
-  if (ads_init->intr_enabled)
-    XIntc_Disable(ads_init->intr_ctrl_ptr, ads_init->intr_vec_id);
+  if (ads->intr_enabled)
+    XIntc_Disable(ads->intr_ctrl_ptr, ads->intr_vec_id);
 
   // Write the the buffer to the ADS sensor
   unsigned char *buffer_uch = reinterpret_cast<unsigned char *>(buffer);
-  int bytes =
-      I2C_Write_axi(ads_init->i2c_ctrl_ptr->BaseAddress, ads_init->i2c_addr, -1, len, buffer_uch);
+  int bytes = I2C_Write_axi(ads->i2c_ctrl_ptr->BaseAddress, ads->i2c_addr, -1,
+                            len, buffer_uch);
   xil_printf("[INFO] write %d bytes!\n\r", bytes);
 
   // Enable the interrupt
-  if (ads_init->intr_enabled) {
-    XIntc_Enable(ads_init->intr_ctrl_ptr, ads_init->intr_vec_id);
+  if (ads->intr_enabled) {
+    XIntc_Enable(ads->intr_ctrl_ptr, ads->intr_vec_id);
     // TODO ignored currently
     // need check will this situation happen or not
     /*
@@ -203,12 +251,12 @@ int ads_hal_write_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len) {
  * @param len           Length of buffer.
  * @return  ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_read_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len) {
+int ads_hal_read_buffer(ads_t *ads, uint8_t *buffer, uint8_t len) {
   // unsigned char* buffer_uch = reinterpret_cast<unsigned char*>(buffer);
   // int recv_num = I2C_Read_axi(InstancePtr->BaseAddress, I2cAddr, -1, len,
   // buffer_uch);
-  int recv_num =
-      I2C_Read_axi(ads_init->i2c_ctrl_ptr->BaseAddress, ads_init->i2c_addr, -1, len, buffer);
+  int recv_num = I2C_Read_axi(ads->i2c_ctrl_ptr->BaseAddress, ads->i2c_addr, -1,
+                              len, buffer);
   if (recv_num == len)
     return ADS_OK;
   else
@@ -237,7 +285,7 @@ int ads_hal_read_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len) {
  *
  * @param dfuMode   Resets ADS into firmware update mode if true
  */
-void ads_hal_reset(ads_t *ads_init) {
+void ads_hal_reset(ads_t *ads) {
   /*
 // Configure reset line as an output
 pinMode(ADS_RESET_PIN, OUTPUT);
@@ -250,26 +298,26 @@ pinMode(ADS_RESET_PIN, INPUT_PULLUP);
   */
 
   // set reset to output
-  u32 gpio_dir = XGpio_GetDataDirection(ads_init->reset_pins, 1);
-  u32 mask = 1 << ads_init->reset_id;
+  u32 gpio_dir = XGpio_GetDataDirection(ads->reset_pins, 1);
+  u32 mask = 1 << ads->reset_id;
   gpio_dir = gpio_dir & ~(mask);
-  XGpio_SetDataDirection(ads_init->reset_pins, 1, gpio_dir);
+  XGpio_SetDataDirection(ads->reset_pins, 1, gpio_dir);
 
   // write 0 to specific reset
-  u32 gpio_val = XGpio_DiscreteRead(ads_init->reset_pins, 1);
+  u32 gpio_val = XGpio_DiscreteRead(ads->reset_pins, 1);
   gpio_val = gpio_val & ~(mask);
-  XGpio_DiscreteWrite(ads_init->reset_pins, 1, gpio_val);
+  XGpio_DiscreteWrite(ads->reset_pins, 1, gpio_val);
 
   ads_hal_delay(10);
 
   // write 0 to specific reset
-  gpio_val = XGpio_DiscreteRead(ads_init->reset_pins, 1);
+  gpio_val = XGpio_DiscreteRead(ads->reset_pins, 1);
   gpio_val = gpio_val | mask;
-  XGpio_DiscreteWrite(ads_init->reset_pins, 1, gpio_val);
+  XGpio_DiscreteWrite(ads->reset_pins, 1, gpio_val);
 
   // set reset to input
   gpio_dir = gpio_dir | mask;
-  XGpio_SetDataDirection(ads_init->reset_pins, 1, gpio_dir);
+  XGpio_SetDataDirection(ads->reset_pins, 1, gpio_dir);
 }
 
 /**
@@ -277,21 +325,21 @@ pinMode(ADS_RESET_PIN, INPUT_PULLUP);
  *
  * @return  ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_init(ads_t *ads_init) {
+int ads_hal_init(ads_t *ads) {
   // Reset the ads
-  ads_hal_reset(ads_init);
+  ads_hal_reset(ads);
 
   // Wait for ads to initialize
   ads_hal_delay(2000);
 
   // Configure and enable interrupt pin
-  ads_hal_pin_int_init(ads_init);
+  ads_hal_pin_int_init(ads);
 
-    /* commented since this is fixed in FPGA
-  // Configure I2C bus
-  Wire.begin();
-  Wire.setClock(400000);
-    */
+  /* commented since this is fixed in FPGA
+// Configure I2C bus
+Wire.begin();
+Wire.setClock(400000);
+  */
 
   return ADS_OK;
 }
@@ -356,7 +404,8 @@ uint8_t ads_hal_get_address(ads_t *ads) {
  *              Used by device firmware update (dfu)
  */
 void ads_hal_set_address(ads_t *ads, uint8_t address) {
-  int Status = XIic_SetAddress(ads->i2c_ctrl_ptr, XII_ADDR_TO_SEND_TYPE, address);
+  int Status =
+      XIic_SetAddress(ads->i2c_ctrl_ptr, XII_ADDR_TO_SEND_TYPE, address);
   if (Status != XST_SUCCESS)
     xil_printf("[ERROR] XIic_SetAddress failed!\r\n");
   /* commented since this won't be used on FPGA

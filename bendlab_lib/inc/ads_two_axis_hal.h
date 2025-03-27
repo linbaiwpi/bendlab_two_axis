@@ -31,6 +31,11 @@ typedef struct {
   bool intr_enabled; // indicate interrupt mode is enabled or not
 } ads_t;
 
+typedef struct {
+    XIic *InstancePtr;
+    u32 I2cAddr;
+} isr_t;
+
 #define ADS_TRANSFER_SIZE (5)
 
 #define ADS_COUNT (10) // Number of ADS devices attached to bus
@@ -47,7 +52,7 @@ void ads_hal_pin_int_enable(ads_t *ads_init, bool enable);
  * @param len			Length of buffer.
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_write_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len);
+int ads_hal_write_buffer(ads_t *ads, uint8_t *buffer, uint8_t len);
 
 /**
  * @brief Read buffer of data from the Angular Displacement Sensor
@@ -56,7 +61,7 @@ int ads_hal_write_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len);
  * @param len			Length of buffer.
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_read_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len);
+int ads_hal_read_buffer(ads_t *ads, uint8_t *buffer, uint8_t len);
 
 /**
  * @brief Reset the Angular Displacement Sensor
