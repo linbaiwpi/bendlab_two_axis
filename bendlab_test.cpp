@@ -3,13 +3,13 @@
 #include <stdio.h>
 #include <xil_printf.h>
 
+#include "xgpio.h"
 #include "xiic.h"
 #include "xil_exception.h"
+#include "xil_printf.h"
 #include "xintc.h"
 #include "xtmrctr.h"
 #include "xuartlite.h"
-//#include "xgpio.h"
-#include "xil_printf.h"
 
 #include "ads_two_axis.h"
 #include "i2c_axi.h"
@@ -21,8 +21,7 @@
 #define ADS_RESET_PIN (4)     // Pin number attached to ads reset line.
 #define ADS_INTERRUPT_PIN (3) // Pin number attached to the ads data ready line.
 
-//#define GPIO_DEVICE_ID        XPAR_AXI_GPIO_0_BASEADDR    // ResetPinGpio
-//BaseAddress
+#define GPIO_DEVICE_ID XPAR_AXI_GPIO_0_BASEADDR // ResetPinGpio BaseAddress
 #define INTC_DEVICE_ID XPAR_XINTC_0_BASEADDR    // 中断控制器BaseAddress
 #define TIMER_DEVICE_ID XPAR_XTMRCTR_0_BASEADDR // 定时器BaseAddress
 #define TIMER_INTR_ID 1                         // 定时中断ID
@@ -32,7 +31,7 @@ XIic iic_bl_r0, iic_bl_r1;
 XUartLite axi_uartlite_0;
 XIntc axi_intc;
 XTmrCtr axi_timer;
-// XGpio    reset_gpio;
+XGpio reset_gpio;
 
 // function prototypes
 void ads_data_callback(float *sample);

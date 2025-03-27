@@ -108,11 +108,8 @@ int ads_two_axis_update_device_address(uint8_t device, uint8_t address) {
  * @param	ads_init_t	initialization structure of the ADS
  * @return	ADS_OK if successful ADS_ERR if failed
  */
-int ads_two_axis_init(ads_init_t *ads_init) {
-  ads_hal_init(&ads_two_axis_parse_read_buffer, ads_init->reset_pin,
-               ads_init->datardy_pin);
-
-  ads_data_callback = ads_init->ads_sample_callback;
+int ads_two_axis_init(ads_t *ads_init) {
+  ads_hal_init(ads_init);
 
   // Check that the device id matched ADS_TWO_AXIS
   // Check that the device type is a one axis

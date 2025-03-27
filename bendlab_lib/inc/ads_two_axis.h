@@ -66,7 +66,7 @@ typedef struct {
   uint8_t i2c_addr;     // i2c device address
   XIntc *intr_ctrl_ptr; // pointer of axi interrupt controller
   uint8_t intr_vec_id;  // interrupt vector ID
-  // XGpio *reset_pins;      // pointer of gpio to connect all reset
+  XGpio *reset_pins;      // pointer of gpio to connect all reset
   uint8_t reset_id;  // reset pin index of current
   bool intr_enabled; // indicate interrupt mode is enabled or not
 } ads_t;
@@ -112,7 +112,7 @@ int ads_two_axis_update_device_address(uint8_t device, uint8_t address);
  * @param	ads_init_t	initialization structure of the ADS
  * @return	ADS_OK if successful ADS_ERR if failed
  */
-int ads_two_axis_init(ads_init_t *ads_init);
+int ads_two_axis_init(ads_t *ads_init);
 
 /**
  * @brief Calibrates two axis ADS. ADS_CALIBRATE_FIRST must be at 0 degrees on

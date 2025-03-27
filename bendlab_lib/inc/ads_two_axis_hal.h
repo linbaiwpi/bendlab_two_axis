@@ -14,6 +14,7 @@
 #define ADS_TWO_AXIS_HAL_
 
 #include "ads_two_axis_err.h"
+#include "ads_two_axis.h"
 #include <stdint.h>
 
 #define ADS_TRANSFER_SIZE (5)
@@ -21,8 +22,9 @@
 #define ADS_COUNT (10) // Number of ADS devices attached to bus
 
 void ads_hal_delay(uint16_t delay_ms);
+void delay(uint16_t delay_ms);
 
-void ads_hal_pin_int_enable(bool enable);
+void ads_hal_pin_int_enable(ads_t *ads_init, bool enable);
 
 /**
  * @brief Write buffer of data to the Angular Displacement Sensor
@@ -31,7 +33,7 @@ void ads_hal_pin_int_enable(bool enable);
  * @param len			Length of buffer.
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_write_buffer(uint8_t *buffer, uint8_t len);
+int ads_hal_write_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len);
 
 /**
  * @brief Read buffer of data from the Angular Displacement Sensor
@@ -40,20 +42,19 @@ int ads_hal_write_buffer(uint8_t *buffer, uint8_t len);
  * @param len			Length of buffer.
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_read_buffer(uint8_t *buffer, uint8_t len);
+int ads_hal_read_buffer(ads_t *ads_init, uint8_t *buffer, uint8_t len);
 
 /**
  * @brief Reset the Angular Displacement Sensor
  */
-void ads_hal_reset(void);
+void ads_hal_reset(ads_t *ads_init);
 
 /**
  * @brief Initializes the hardware abstraction layer
  *
  * @return	ADS_OK if successful ADS_ERR_IO if failed
  */
-int ads_hal_init(void (*callback)(uint8_t *), uint32_t reset_pin,
-                 uint32_t datardy_pin);
+int ads_hal_init(ads_t *ads_init);
 
 /**
  * @brief Selects the current device address the driver is communicating with
