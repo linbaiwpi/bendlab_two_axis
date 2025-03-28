@@ -78,6 +78,8 @@ ads_hal_pin_int_enable(true);
 }
 
 static inline void ads_hal_gpio_pin_write(uint8_t pin, uint8_t val) {
+    (void)pin;
+    (void)val;
   // TODO
   /*
 digitalWrite(pin, val);
@@ -360,6 +362,7 @@ int ads_hal_select_device(uint8_t device) {
 
   return ADS_OK;
   */
+  (void)device;
   return ADS_ERR_BAD_PARAM;
 }
 
@@ -383,6 +386,8 @@ int ads_hal_update_device_addr(uint8_t device, uint8_t address) {
 
   return ADS_OK;
   */
+  (void)device;
+  (void)address;
   return ADS_ERR_BAD_PARAM;
 }
 
