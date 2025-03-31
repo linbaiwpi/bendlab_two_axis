@@ -11,6 +11,7 @@
  */
 
 #include "ads_two_axis.h"
+#include <xil_assert.h>
 
 static ads_callback ads_data_callback;
 
@@ -47,6 +48,7 @@ int ads_two_axis_run(ads_t *ads, bool run) {
   buffer[1] = run;
 
   return ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
+  // xil_printf("ads_two_axis_run\n\r");
 }
 
 /**
@@ -109,13 +111,6 @@ int ads_two_axis_update_device_address(ads_t *ads, uint8_t device, uint8_t addre
  * @return	ADS_OK if successful ADS_ERR if failed
  */
 int ads_two_axis_init(ads_init_t *ads_init, ads_t *ads) {
-    // for test only
-    {
-
-    ADS_DEV_TYPE_T ads_dev_type2;
-    if (ads_get_dev_type(ads, &ads_dev_type2) != ADS_OK)
-        xil_printf("ads_get_dev_type : %d\n\r", ads_dev_type2);
-    }
   ads_hal_init(ads);
 
   // Check that the device id matched ADS_TWO_AXIS
@@ -251,27 +246,25 @@ int ads_get_dev_type(ads_t *ads, ADS_DEV_TYPE_T *ads_dev_type) {
   uint8_t buffer[ADS_TRANSFER_SIZE];
 
   buffer[0] = ADS_GET_DEV_ID;
-  xil_printf("buffer[0] = %d\n\r", (int)buffer[0]);
-  xil_printf("ADS_TRANSFER_SIZE = %d\n\r", ADS_TRANSFER_SIZE);
 
   // Disable interrupt to prevent callback from reading out device id
-  //ads_hal_pin_int_enable(ads, false);
+  // ads_hal_pin_int_enable(ads, false);
 
   ads_hal_write_buffer(ads, buffer, ADS_TRANSFER_SIZE);
   ads_hal_delay(2);
   ads_hal_read_buffer(ads, buffer, ADS_TRANSFER_SIZE);
 
-  //ads_hal_pin_int_enable(ads, true);
+  // ads_hal_pin_int_enable(ads, true);
 
-xil_printf("buffer[0] = %d\n\r", (int)buffer[0]);
   if (buffer[0] == ADS_DEV_ID) {
     switch (buffer[1]) {
-    case ADS_DEV_ONE_AXIS_V1:
-    case ADS_DEV_ONE_AXIS_V2:
-    case ADS_DEV_TWO_AXIS_V1:
-    case ADS_DEV_TWO_AXIS_V2:
-      *ads_dev_type = static_cast<ADS_DEV_TYPE_T>(buffer[1]);
-      return ADS_OK;
+        case ADS_DEV_ONE_AXIS_V1:
+        case ADS_DEV_ONE_AXIS_V2:
+        case ADS_DEV_TWO_AXIS_V1:
+        case ADS_DEV_TWO_AXIS_V2:
+            *ads_dev_type = static_cast<ADS_DEV_TYPE_T>(buffer[1]);
+            // xil_printf("found %d\n\r", buffer[1]);
+        return ADS_OK;
     }
   }
 

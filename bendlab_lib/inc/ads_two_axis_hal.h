@@ -23,8 +23,10 @@
 typedef struct {
   // user added
   XIic *i2c_ctrl_ptr;   // pointer of i2c controller on microblaze
+  u32 i2c_ctrl_baseaddr;
   uint8_t i2c_addr;     // i2c device address
   XIntc *intr_ctrl_ptr; // pointer of axi interrupt controller
+  u32 intr_ctrl_baseaddr;
   uint8_t intr_vec_id;  // interrupt vector ID
   XGpio *reset_pins;      // pointer of gpio to connect all reset
   uint8_t reset_id;  // reset pin index of current
@@ -105,5 +107,10 @@ uint8_t ads_hal_get_address(ads_t *ads);
  *				Used by device firmware update (dfu)
  */
 void ads_hal_set_address(ads_t *ads, uint8_t address);
+
+
+void ads_hal_i2c_init(ads_t *ads);
+void ads_hal_intc_init(ads_t *ads, const int8_t ads_size);
+
 
 #endif /* ADS_TWO_AXIS_HAL_ */

@@ -45,7 +45,6 @@ static uint8_t ads_addrs[ADS_COUNT] = {
 /************************************************************************/
 static inline void ads_hal_gpio_pin_write(uint8_t pin, uint8_t val);
 static void ads_hal_pin_int_init(ads_t *ads);
-static void ads_hal_i2c_init(ads_t *ads);
 
 /**
  * @brief ADS data ready interrupt. Reads out packet from ADS and fires callback
@@ -55,6 +54,7 @@ static void ads_hal_i2c_init(ads_t *ads);
  * @param len           Length of buffer.
  * @return  ADS_OK if successful ADS_ERR_IO if failed
  */
+/*
 void ads_hal_interrupt(void *isr) {
   isr_t *isr_ = (isr_t *)isr;
   // if (ads_hal_read_buffer(isr_->InstancePtr, isr_->I2cAddr, read_buffer,
@@ -67,6 +67,7 @@ void ads_hal_interrupt(void *isr) {
     xil_printf("read ERROR");
   // ads_read_callback(read_buffer);
 }
+*/
 
 static void ads_hal_pin_int_init(ads_t *ads) {
   // TODO
@@ -97,15 +98,15 @@ void ads_hal_delay(uint16_t delay_ms) {
 void delay(uint16_t delay_ms) { ads_hal_delay(delay_ms); }
 
 void ads_hal_pin_int_enable(ads_t *ads, bool enable) {
-  _ads_int_enabled = enable;
+  // _ads_int_enabled = enable;
 
   if (enable) {
     // attachInterrupt(digitalPinToInterrupt(ADS_INTERRUPT_PIN),
     // ads_hal_interrupt, FALLING);
-    XIntc_Disable(ads->intr_ctrl_ptr, ads->intr_vec_id);
+    XIntc_Enable(ads->intr_ctrl_ptr, ads->intr_vec_id);
   } else {
     // detachInterrupt(digitalPinToInterrupt(ADS_INTERRUPT_PIN));
-    XIntc_Enable(ads->intr_ctrl_ptr, ads->intr_vec_id);
+    XIntc_Disable(ads->intr_ctrl_ptr, ads->intr_vec_id);
   }
 }
 
@@ -117,7 +118,7 @@ void ads_hal_i2c_init(ads_t *ads) {
   int Status;
   XIic_Config *ConfigPtr;
 
-  ConfigPtr = XIic_LookupConfig(ads->i2c_ctrl_ptr->BaseAddress);
+  ConfigPtr = XIic_LookupConfig(ads->i2c_ctrl_baseaddr);
   if (ConfigPtr == NULL) {
     xil_printf("[ERROR] XIic_LookupConfig Failed!\r\n");
   }
@@ -154,28 +155,29 @@ void ads_hal_gpio_init(XGpio *ads_gpio, UINTPTR baseAddr, bool is_output) {
   else
     XGpio_SetDataDirection(ads_gpio, 1, 1);
 }
-
-void ads_hal_intc_init(XIntc *ads_intc, UINTPTR baseAddr, const ads_t *ads,
-                       const int8_t ads_size) {
+/*
+void ads_hal_intc_init(ads_t *ads, const int8_t ads_size) {
   //中断控制器初始化
-  XIntc_Initialize(ads_intc, baseAddr);
+  XIntc_Initialize(ads->intr_ctrl_ptr, ads->intr_ctrl_baseaddr);
   for (int i = 0; i < ads_size; ++i) {
     isr_t isr_ = {ads[i].i2c_ctrl_ptr, ads[i].i2c_addr};
     //关联中断源和中断处理函数
-    XIntc_Connect(ads_intc, ads[i].intr_vec_id,
+    XIntc_Connect(ads->intr_ctrl_ptr, ads[i].intr_vec_id,
                   (XInterruptHandler)ads_hal_interrupt, (void *)&isr_);
     //使能中断控制器
-    XIntc_Enable(ads_intc, ads[i].intr_vec_id);
+    XIntc_Enable(ads->intr_ctrl_ptr, ads[i].intr_vec_id);
   }
   //开启中断控制器
-  XIntc_Start(ads_intc, XIN_REAL_MODE);
+  XIntc_Start(ads->intr_ctrl_ptr, XIN_REAL_MODE);
   //设置并打开中断异常处理
   Xil_ExceptionInit();
   Xil_ExceptionRegisterHandler(XIL_EXCEPTION_ID_INT,
                                (Xil_ExceptionHandler)XIntc_InterruptHandler,
-                               ads_intc);
+                               ads->intr_ctrl_ptr);
   Xil_ExceptionEnable();
+  xil_printf("[INFO] Interrupt controller initialization done!\n\r");
 }
+*/
 
 /**
  * @brief Write buffer of data to the Angular Displacement Sensor
@@ -186,8 +188,8 @@ void ads_hal_intc_init(XIntc *ads_intc, UINTPTR baseAddr, const ads_t *ads,
  */
 int ads_hal_write_buffer(ads_t *ads, uint8_t *buffer, uint8_t len) {
   // Disable the interrupt
-  if (ads->intr_enabled)
-    XIntc_Disable(ads->intr_ctrl_ptr, ads->intr_vec_id);
+//  if (ads->intr_enabled)
+//    XIntc_Disable(ads->intr_ctrl_ptr, ads->intr_vec_id);
 
   // Write the the buffer to the ADS sensor
   unsigned char *buffer_uch = reinterpret_cast<unsigned char *>(buffer);
@@ -195,20 +197,20 @@ int ads_hal_write_buffer(ads_t *ads, uint8_t *buffer, uint8_t len) {
                             len, buffer_uch);
   xil_printf("[INFO] write %d bytes!\n\r", bytes);
 
-  // Enable the interrupt
-  if (ads->intr_enabled) {
-    XIntc_Enable(ads->intr_ctrl_ptr, ads->intr_vec_id);
-    // TODO ignored currently
-    // need check will this situation happen or not
-    /*
-    // Read data packet if interrupt was missed
-    if (digitalRead(ADS_INTERRUPT_PIN) == 0) {
-      if (ads_hal_read_buffer(read_buffer, ADS_TRANSFER_SIZE) == ADS_OK) {
-        ads_read_callback(read_buffer);
-      }
-    }
-    */
-  }
+//   // Enable the interrupt
+//   if (ads->intr_enabled) {
+//     XIntc_Enable(ads->intr_ctrl_ptr, ads->intr_vec_id);
+//     // TODO ignored currently
+//     // need check will this situation happen or not
+//     /*
+//     // Read data packet if interrupt was missed
+//     if (digitalRead(ADS_INTERRUPT_PIN) == 0) {
+//       if (ads_hal_read_buffer(read_buffer, ADS_TRANSFER_SIZE) == ADS_OK) {
+//         ads_read_callback(read_buffer);
+//       }
+//     }
+//     */
+//   }
 
   if (bytes == len)
     return ADS_OK;
@@ -329,13 +331,16 @@ pinMode(ADS_RESET_PIN, INPUT_PULLUP);
  */
 int ads_hal_init(ads_t *ads) {
   // Reset the ads
-  ads_hal_reset(ads);
+  // ads_hal_reset(ads); // TODO
 
   // Wait for ads to initialize
   ads_hal_delay(2000);
 
+  ads_hal_i2c_init(ads);
+  // ads_hal_intc_init(ads, 1);
+
   // Configure and enable interrupt pin
-  ads_hal_pin_int_init(ads);
+  // ads_hal_pin_int_init(ads);
 
   /* commented since this is fixed in FPGA
 // Configure I2C bus
